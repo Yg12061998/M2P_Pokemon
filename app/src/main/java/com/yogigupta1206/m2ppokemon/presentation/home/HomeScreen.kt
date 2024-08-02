@@ -25,7 +25,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -35,7 +34,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.yogigupta1206.m2ppokemon.domain.model.PokemonCardPreview
 import com.yogigupta1206.m2ppokemon.presentation.home.components.PokemonListItem
 
 @Composable
@@ -44,7 +42,7 @@ fun HomeScreen(
     viewModel: HomeScreenViewModel = hiltViewModel()
 ) {
 
-    val pokemonCollection by viewModel.pokemonList.collectAsState()
+    val uiState by viewModel.uiState.collectAsState()
     val searchText by viewModel.searchText.collectAsState()
 
     Scaffold(
@@ -54,9 +52,11 @@ fun HomeScreen(
         content = { padding ->
             HomeScreenContent(
                 padding,
-                pokemonCollection,
+                uiState,
                 searchText,
-                viewModel::onSearchTextChange,
+                {newText ->
+                    viewModel.onSearchTextChange(newText)
+                },
                 viewModel::onSortOptionChange,
                 onNavigateToPokemonDetails
             )
@@ -76,7 +76,7 @@ fun HomeTopAppBar() {
 @Composable
 fun HomeScreenContent(
     padding: PaddingValues,
-    pokemonListState: List<PokemonCardPreview>,
+    uiState: HomeScreenUiState,
     searchText: String,
     onSearchTextChange: (String) -> Unit,
     sortOptionChange: (SortOption) -> Unit,
@@ -92,9 +92,9 @@ fun HomeScreenContent(
         )
 
         LazyColumn {
-            items(pokemonListState) { pokemon ->
-                PokemonListItem(pokemon, onClick = {
-                    onNavigateToPokemonDetails(pokemon.id)
+            items(uiState.pokemonList){
+                PokemonListItem(it, onClick = {
+                    onNavigateToPokemonDetails(it.id)
                 })
             }
         }
@@ -119,10 +119,10 @@ fun SearchHeader(
             modifier = Modifier.weight(1f),
             query = searchText,
             onQueryChange = onValueChange,
-            onSearch = { /* Handle search action here */ }
+            onSearch = { }
         )
 
-        Spacer(modifier = Modifier.width(16.dp)) // Add spacing between search bar and sorting
+        Spacer(modifier = Modifier.width(16.dp))
 
         var expanded by remember { mutableStateOf(false) }
         Box {

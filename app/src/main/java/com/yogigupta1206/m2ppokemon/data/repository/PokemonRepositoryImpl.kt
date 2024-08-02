@@ -3,6 +3,7 @@ package com.yogigupta1206.m2ppokemon.data.repository
 import android.util.Log
 import com.yogigupta1206.m2ppokemon.data.data_source.db.PokemonDao
 import com.yogigupta1206.m2ppokemon.data.data_source.network.NetworkHelper
+import com.yogigupta1206.m2ppokemon.data.data_source.network.NetworkResult
 import com.yogigupta1206.m2ppokemon.data.data_source.network.PokemonApi
 import com.yogigupta1206.m2ppokemon.domain.model.PokemonCardEntity
 import com.yogigupta1206.m2ppokemon.domain.model.PokemonCardPreview
@@ -23,33 +24,39 @@ class PokemonRepositoryImpl @Inject constructor(
 ) : PokemonRepository {
 
     companion object{
-        val TAG = PokemonRepositoryImpl::class.java.simpleName
+        val TAG: String = PokemonRepositoryImpl::class.java.simpleName
     }
 
-    override fun getPokemonList(): Flow<List<PokemonCardPreview>> = flow {
-        // Attempt to fetch from cache
+    override fun getPokemonList(): Flow<Resource<List<PokemonCardPreview>>> = flow {
+        emit(Resource.Loading())
         val cachedPokemon = pokemonDao.getPokemonCardPreviews()
-        emit(cachedPokemon)
 
-        // Fetch from network
-        val response = getPokemonCardsFromNetwork()
-        val pokemonList = response.responseData?.data.toPokemonCardEntities()
+        if(cachedPokemon.isNotEmpty()){
+            emit(Resource.Success(cachedPokemon))
+        }
 
-        // Cache pokemon
-        pokemonList?.let { pokemonDao.insertAll(it) }
-        emit(pokemonDao.getAll().toPokemonCardPreviews())
-    }.flowOn(Dispatchers.IO) // Ensure network operations run on IO dispatcher
+        when(val response = getPokemonCardsFromNetwork()){
+            is NetworkResult.Error -> {
+                emit(Resource.Error(response.message ?: "Unknown error"))
+            }
+            is NetworkResult.Success -> {
+                val pokemonList = response.responseData?.data.toPokemonCardEntities()
+                pokemonList?.let { pokemonDao.insertAll(it) }
+                emit(Resource.Success(pokemonList?.toPokemonCardPreviews() ?: emptyList()))
+            }
+        }
+    }.flowOn(Dispatchers.IO)
 
     private suspend fun getPokemonCardsFromNetwork() = networkHelper.safeApiCall { pokemonApi.getPokemonList() }
 
     override fun getPokemonDetails(pokemonId: String): Flow<Resource<PokemonCardEntity>> = flow {
         try {
-            emit(Resource.Loading()) // Indicate loading state
+            emit(Resource.Loading())
             val pokemon = pokemonDao.getPokemonCard(pokemonId)
             Log.d(TAG, "getPokemonDetails: id:$pokemonId and $pokemon")
-            emit(Resource.Success(pokemon)) // Emit the pokemon details
+            emit(Resource.Success(pokemon))
         } catch (e: Exception) {
-            emit(Resource.Error(e.message ?: "Unknown error")) // Emit error if any
+            emit(Resource.Error(e.message ?: "Unknown error"))
         }
     }.flowOn(Dispatchers.IO)
 

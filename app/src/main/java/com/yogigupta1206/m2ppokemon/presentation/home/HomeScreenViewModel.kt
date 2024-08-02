@@ -1,63 +1,76 @@
 package com.yogigupta1206.m2ppokemon.presentation.home
 
-import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.yogigupta1206.m2ppokemon.domain.model.PokemonCardPreview
 import com.yogigupta1206.m2ppokemon.domain.repository.PokemonRepository
+import com.yogigupta1206.m2ppokemon.utils.Resource
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+@OptIn(FlowPreview::class)
 @HiltViewModel
 class HomeScreenViewModel @Inject constructor(
     private val repository: PokemonRepository
 ) : ViewModel() {
 
-    private val _pokemonList = mutableStateOf<List<PokemonCardPreview>>(listOf())
-
-    init {
-        fetchPokemonList()
-    }
-
-    private fun fetchPokemonList() {
-        viewModelScope.launch {
-            repository.getPokemonList().collect { result ->
-                _pokemonList.value = result
-            }
-        }
-    }
+    private val _uiState = MutableStateFlow(HomeScreenUiState())
+    val uiState: StateFlow<HomeScreenUiState> = _uiState.asStateFlow()
 
     private val _searchText = MutableStateFlow("")
-    val searchText: StateFlow<String> = _searchText
+    val searchText: StateFlow<String> = _searchText.asStateFlow()
 
-    private val _sortOption = MutableStateFlow(SortOption.HP) // Default sorting
-    val sortOption: StateFlow<SortOption> = _sortOption
+    init {
+        viewModelScope.launch {
+            combine(
+                repository.getPokemonList(), _searchText.debounce(300), _uiState
+            ) { pokemonListResource, searchText, uiState ->
+                when (pokemonListResource) {
+                    is Resource.Success -> {
+                        viewModelScope.launch(Dispatchers.Default) { // Use Default dispatcher
+                            val pokemonList = pokemonListResource.data ?: emptyList()
+                            val filteredPokemon = pokemonList.filter {
+                                it.name.contains(searchText, ignoreCase = true)
+                            }
+                            val sortedPokemon = when (uiState.sortOption) {
+                                SortOption.LEVEL -> filteredPokemon.sortedBy { it.level }
+                                SortOption.HP -> filteredPokemon.sortedBy { it.hp }
+                            }
+                            _uiState.value = _uiState.value.copy(
+                                pokemonList = sortedPokemon, isLoading = false, errorMessage = null
+                            )
+                        }
+                    }
 
-    val pokemonList: StateFlow<List<PokemonCardPreview>> = combine(
-        repository.getPokemonList(), _searchText, _sortOption
-    ) { allPokemon, search, sortOption ->
-        val filteredPokemon = allPokemon.filter { it.name.contains(search, ignoreCase = true) }
-        when (sortOption) {
-            SortOption.LEVEL -> filteredPokemon.sortedBy { it.level }
-            SortOption.HP -> filteredPokemon.sortedBy { it.hp }
+                    is Resource.Error -> {
+                        _uiState.value = _uiState.value.copy(
+                            isLoading = false, errorMessage = pokemonListResource.message
+                        )
+                    }
+
+                    is Resource.Loading -> {
+                        _uiState.value = _uiState.value.copy(isLoading = true)
+                    }
+                }
+            }.distinctUntilChanged().launchIn(viewModelScope)
         }
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
-
+    }
 
     fun onSearchTextChange(newText: String) {
         _searchText.value = newText
     }
 
     fun onSortOptionChange(newOption: SortOption) {
-        _sortOption.value = newOption
+        _uiState.value = _uiState.value.copy(sortOption = newOption)
     }
 
 }
-
-enum class SortOption { LEVEL, HP }

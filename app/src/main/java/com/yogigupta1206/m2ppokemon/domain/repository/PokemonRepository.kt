@@ -7,6 +7,6 @@ import com.yogigupta1206.m2ppokemon.utils.Resource
 import kotlinx.coroutines.flow.Flow
 
 interface PokemonRepository {
-    fun getPokemonList(): Flow<List<PokemonCardPreview>>
+    fun getPokemonList(): Flow<Resource<List<PokemonCardPreview>>>
     fun getPokemonDetails(pokemonId: String): Flow<Resource<PokemonCardEntity>>
 }
