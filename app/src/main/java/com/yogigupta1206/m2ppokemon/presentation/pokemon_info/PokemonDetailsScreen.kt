@@ -1,13 +1,11 @@
 package com.yogigupta1206.m2ppokemon.presentation.pokemon_info
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.material.icons.Icons
@@ -30,9 +28,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.navigation.NavController
 import coil.compose.AsyncImage
-import coil.compose.rememberAsyncImagePainter
 import coil.request.ImageRequest
 import com.yogigupta1206.m2ppokemon.domain.model.PokemonCardEntity
 import kotlinx.coroutines.Dispatchers
@@ -40,8 +36,8 @@ import kotlinx.coroutines.Dispatchers
 
 @Composable
 fun PokemonDetailsScreen(
-    viewModel: PokemonDetailsViewModel = hiltViewModel(),
-    navController: NavController
+    viewModel: PokemonDetailsViewModel = hiltViewModel() ,
+    onNavigateBack:() -> Unit
 ) {
     val state by viewModel.pokemonDetails.collectAsState()
 
@@ -56,19 +52,19 @@ fun PokemonDetailsScreen(
             Text(text = state.error, color = Color.Red)
         }
     } else {
-        state.pokemon?.let { PokemonDetailsContent(it, navController) }
+        state.pokemon?.let { PokemonDetailsContent(it, onNavigateBack) }
     }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun PokemonDetailsContent(pokemon: PokemonCardEntity, navController: NavController) {
+fun PokemonDetailsContent(pokemon: PokemonCardEntity, onNavigateBack: () -> Unit) {
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text(pokemon.name) },
                 navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
+                    IconButton(onClick = { onNavigateBack() }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
                     }
                 }

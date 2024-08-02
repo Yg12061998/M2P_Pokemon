@@ -2,6 +2,7 @@ package com.yogigupta1206.m2ppokemon.ui.components
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.navigation.NavController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -21,7 +22,7 @@ fun AppNavigationGraph() {
     ) {
 
         composable(Screens.HomePage.route) {
-            HomeScreen(navController = navController)
+            HomeScreen(onNavigateToPokemonDetails = { navController.onNavigateToPokemonDetails(it) })
         }
 
         composable(
@@ -33,10 +34,13 @@ fun AppNavigationGraph() {
                 }
             )
         ) {
-            PokemonDetailsScreen(navController = navController)
+            PokemonDetailsScreen(onNavigateBack = { navController.popBackStack() })
         }
 
 
     }
 }
+
+fun NavController.onNavigateToPokemonDetails(id: String) =
+    navigate(Screens.PokemonDetailsPage.route + "?id=$id")
 

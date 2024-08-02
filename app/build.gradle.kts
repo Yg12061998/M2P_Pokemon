@@ -5,6 +5,7 @@ plugins {
     id("com.google.dagger.hilt.android")
     id("kotlin-parcelize")
     id("com.google.devtools.ksp")
+    id("dev.shreyaspatil.compose-compiler-report-generator")
 }
 
 android {
