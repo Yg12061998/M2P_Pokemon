@@ -7,6 +7,7 @@ import com.yogigupta1206.m2ppokemon.utils.Resource
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -28,9 +29,17 @@ class HomeScreenViewModel @Inject constructor(
 
     private val _searchText = MutableStateFlow("")
     val searchText: StateFlow<String> = _searchText.asStateFlow()
+    private var job: Job? = null
 
     init {
-        viewModelScope.launch {
+        fetchData()
+    }
+
+    fun fetchData(){
+        if(job?.isActive == true){
+            job?.cancel()
+        }
+        job = viewModelScope.launch {
             combine(
                 repository.getPokemonList(), _searchText.debounce(300), _uiState
             ) { pokemonListResource, searchText, uiState ->

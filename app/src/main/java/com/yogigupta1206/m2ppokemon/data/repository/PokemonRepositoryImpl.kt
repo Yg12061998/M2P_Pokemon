@@ -37,9 +37,13 @@ class PokemonRepositoryImpl @Inject constructor(
 
         when(val response = getPokemonCardsFromNetwork()){
             is NetworkResult.Error -> {
-                emit(Resource.Error(response.message ?: "Unknown error"))
+                if(cachedPokemon.isEmpty()){
+                    Log.d(TAG, "getPokemonList: Error: ${response.message}")
+                    emit(Resource.Error(response.message ?: "Unknown error"))
+                }
             }
             is NetworkResult.Success -> {
+                Log.d(TAG, "getPokemonList: Success")
                 val pokemonList = response.responseData?.data.toPokemonCardEntities()
                 pokemonList?.let { pokemonDao.insertAll(it) }
                 emit(Resource.Success(pokemonList?.toPokemonCardPreviews() ?: emptyList()))
