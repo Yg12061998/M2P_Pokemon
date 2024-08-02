@@ -129,7 +129,7 @@ fun ErrorView(message: String, onRetry: () -> Unit) {
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text(text = message, color = MaterialTheme.colorScheme.error)
+        Text(text = message, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(horizontal = 16.dp))
         Spacer(modifier = Modifier.height(16.dp))
         Button(onClick = onRetry) {
             Text("Retry")
