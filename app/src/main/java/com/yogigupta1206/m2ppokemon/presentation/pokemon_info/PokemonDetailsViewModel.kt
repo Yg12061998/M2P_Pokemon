@@ -7,6 +7,7 @@ import com.yogigupta1206.m2ppokemon.domain.repository.PokemonRepository
 import com.yogigupta1206.m2ppokemon.presentation.pokemon_info.components.PokemonDetailsState
 import com.yogigupta1206.m2ppokemon.utils.Resource
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.launchIn
@@ -30,7 +31,7 @@ class PokemonDetailsViewModel@Inject constructor(
         }
     }
 
-    fun getPokemonDetails(pokemonId: String) {
+    private fun getPokemonDetails(pokemonId: String) {
         pokemonRepository.getPokemonDetails(pokemonId).onEach { result ->
             when (result) {
                 is Resource.Success -> {

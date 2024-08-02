@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.CircularProgressIndicator
@@ -29,8 +30,13 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
+import coil.request.CachePolicy
 import coil.request.ImageRequest
 import com.yogigupta1206.m2ppokemon.domain.model.PokemonCardEntity
+import com.yogigupta1206.m2ppokemon.utils.toAbilityFormattedString
+import com.yogigupta1206.m2ppokemon.utils.toAttackFormattedString
+import com.yogigupta1206.m2ppokemon.utils.toResistanceFormattedString
+import com.yogigupta1206.m2ppokemon.utils.toWeaknessFormattedString
 import kotlinx.coroutines.Dispatchers
 
 
@@ -45,9 +51,7 @@ fun PokemonDetailsScreen(
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             CircularProgressIndicator()
         }
-    } else if
-        (state.error.isNotEmpty())
-    {
+    } else if (state.error.isNotEmpty()) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Text(text = state.error, color = Color.Red)
         }
@@ -81,6 +85,7 @@ fun PokemonDetailsContent(pokemon: PokemonCardEntity, onNavigateBack: () -> Unit
                     .data(pokemon.imageUrl.large)
                     .crossfade(true)
                     .dispatcher(Dispatchers.IO)
+                    .networkCachePolicy(CachePolicy.ENABLED)
                     .build(),
                 contentDescription = pokemon.name,
                 modifier = Modifier
@@ -88,93 +93,39 @@ fun PokemonDetailsContent(pokemon: PokemonCardEntity, onNavigateBack: () -> Unit
                     .height(400.dp),
                 contentScale = ContentScale.Inside
             )
-            Column(modifier = Modifier.padding(16.dp)) {
-                Text(text = pokemon.name, style = MaterialTheme.typography.headlineLarge)
-                Text(text = "Types: ${pokemon.types}", style = MaterialTheme.typography.bodyMedium)
-            }
+            PokemonTitle(pokemon)
             DetailsGrid(pokemon)
         }
     }
 }
 
 @Composable
+fun PokemonTitle(pokemon: PokemonCardEntity){
+    Column(modifier = Modifier.padding(16.dp)) {
+        Text(text = pokemon.name, style = MaterialTheme.typography.headlineLarge)
+        Text(text = "Types: ${pokemon.types}", style = MaterialTheme.typography.bodyMedium)
+    }
+}
+
+@Composable
 fun DetailsGrid(pokemon: PokemonCardEntity) {
+    val detailsList = listOf(
+        "Level" to (pokemon.level?.toString() ?: "N/A"),
+        "HP" to pokemon.hp.toString(),
+        "Types" to pokemon.types.toString(),
+        "Subtypes" to pokemon.subtypes.toString()
+    )
+
+    val additionalDetails = listOfNotNull(
+        if (pokemon.attacks?.isNotEmpty() == true) "Attacks" to pokemon.attacks.toAttackFormattedString() else null,
+        if (pokemon.weaknesses?.isNotEmpty() == true) "Weaknesses" to pokemon.weaknesses.toWeaknessFormattedString() else null,
+        if (pokemon.resistances?.isNotEmpty() == true) "Resistances" to pokemon.resistances.toResistanceFormattedString() else null,
+        if (pokemon.abilities?.isNotEmpty() == true) "Abilities" to pokemon.abilities.toAbilityFormattedString() else null
+    )
+
     LazyVerticalGrid(columns = GridCells.Fixed(2), modifier = Modifier.padding(8.dp)) {
-        item { PokemonDetailItem("Level", pokemon.level?.toString() ?: "N/A") }
-        item { PokemonDetailItem("HP", pokemon.hp.toString()) }
-        item { PokemonDetailItem("Types", pokemon.types.toString()) }
-        item { PokemonDetailItem("Subtypes", pokemon.subtypes.toString()) }
-
-        pokemon.attacks?.let { attacks ->
-            if(attacks.isNotEmpty()){
-                item {
-                    Text(
-                        text = "Attacks:",
-                        style = MaterialTheme.typography.headlineMedium,
-                        modifier = Modifier.padding(8.dp)
-                    )
-                }
-                items(attacks.size) { index ->
-                    Text(
-                        text = "${attacks[index].name} (${attacks.get(index = index).cost.joinToString(" ")}): ${attacks[index].damage} ${attacks[index].text}",
-                        modifier = Modifier.padding(8.dp)
-                    )
-                }
-            }
-        }
-
-        pokemon.weaknesses?.let { weaknesses ->
-            if(weaknesses.isNotEmpty()){
-                item {
-                    Text(
-                        text = "Weaknesses:",
-                        style = MaterialTheme.typography.headlineMedium,
-                        modifier = Modifier.padding(8.dp)
-                    )
-                }
-                items(weaknesses.size) { index ->
-                    Text(
-                        text = "${weaknesses[index].type} (${weaknesses[index].value})",
-                        modifier = Modifier.padding(8.dp)
-                    )
-                }
-            }
-        }
-
-        pokemon.resistances?.let { resistances ->
-            if(resistances.isNotEmpty()){
-                item {
-                    Text(
-                        text = "Resistances:",
-                        style = MaterialTheme.typography.headlineMedium,
-                        modifier = Modifier.padding(8.dp)
-                    )
-                }
-                items(resistances.size) { index ->
-                    Text(
-                        text = "${resistances[index].type} (${resistances[index].value})",
-                        modifier = Modifier.padding(8.dp)
-                    )
-                }
-            }
-        }
-
-        pokemon.abilities?.let { abilities ->
-            if(abilities.isNotEmpty()){
-                item {
-                    Text(
-                        text = "Abilities:",
-                        style = MaterialTheme.typography.headlineMedium,
-                        modifier = Modifier.padding(8.dp)
-                    )
-                }
-                items(abilities.size) { index ->
-                    Text(
-                        text = "${abilities[index].name}: ${abilities[index].text}",
-                        modifier = Modifier.padding(8.dp)
-                    )
-                }
-            }
+        items(detailsList + additionalDetails) { (label, value) ->
+            PokemonDetailItem(label, value)
         }
     }
 }
@@ -186,3 +137,4 @@ fun PokemonDetailItem(label: String, value: String) {
         Text(text = value, style = MaterialTheme.typography.bodyMedium)
     }
 }
+
