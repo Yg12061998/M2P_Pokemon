@@ -3,12 +3,14 @@ package com.yogigupta1206.m2ppokemon.presentation.home
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Menu
@@ -23,6 +25,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -41,7 +44,7 @@ fun HomeScreen(
     viewModel: HomeScreenViewModel = hiltViewModel()
 ) {
 
-    val state by viewModel.pokemonList.collectAsState()
+    val pokemonCollection by viewModel.pokemonList.collectAsState()
     val searchText by viewModel.searchText.collectAsState()
 
     Scaffold(
@@ -49,17 +52,14 @@ fun HomeScreen(
             HomeTopAppBar()
         },
         content = { padding ->
-            Column(
-                modifier = Modifier.padding(padding)
-            ) {
-                SearchHeader(
-                    searchText = searchText,
-                    onValueChange = viewModel::onSearchTextChange,
-                    onSortOptionChange = viewModel::onSortOptionChange
-                )
-                HomeScreenContent(state, onNavigateToPokemonDetails)
-            }
-
+            HomeScreenContent(
+                padding,
+                pokemonCollection,
+                searchText,
+                viewModel::onSearchTextChange,
+                viewModel::onSortOptionChange,
+                onNavigateToPokemonDetails
+            )
         }
     )
 }
@@ -74,11 +74,39 @@ fun HomeTopAppBar() {
 }
 
 @Composable
+fun HomeScreenContent(
+    padding: PaddingValues,
+    pokemonListState: List<PokemonCardPreview>,
+    searchText: String,
+    onSearchTextChange: (String) -> Unit,
+    sortOptionChange: (SortOption) -> Unit,
+    onNavigateToPokemonDetails: (String) -> Unit,
+) {
+    Column(
+        modifier = Modifier.padding(padding)
+    ) {
+        SearchHeader(
+            searchText = searchText,
+            onValueChange = onSearchTextChange,
+            onSortOptionChange = sortOptionChange
+        )
+
+        LazyColumn {
+            items(pokemonListState) { pokemon ->
+                PokemonListItem(pokemon, onClick = {
+                    onNavigateToPokemonDetails(pokemon.id)
+                })
+            }
+        }
+    }
+}
+
+@Composable
 fun SearchHeader(
     searchText: String,
     onValueChange: (String) -> Unit,
     onSortOptionChange: (SortOption) -> Unit
-){
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -99,8 +127,10 @@ fun SearchHeader(
         var expanded by remember { mutableStateOf(false) }
         Box {
             IconButton(onClick = { expanded = true }) {
-                Icon(imageVector = Icons.Filled.Menu,
-                    contentDescription = "Sort",)
+                Icon(
+                    imageVector = Icons.Filled.Menu,
+                    contentDescription = "Sort",
+                )
             }
             DropdownMenu(
                 expanded = expanded,
@@ -141,18 +171,4 @@ fun SearchBar(
         singleLine = true,
         shape = RoundedCornerShape(50)
     )
-}
-
-@Composable
-fun HomeScreenContent(
-    state: List<PokemonCardPreview>,
-    onNavigateToPokemonDetails: (String) -> Unit
-) {
-    LazyColumn {
-        items(state.size) { index ->
-            PokemonListItem(state[index], onClick = {
-                onNavigateToPokemonDetails(state[index].id)
-            })
-        }
-    }
 }

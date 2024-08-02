@@ -33,7 +33,7 @@ fun List<PokemonCardEntity>?.toPokemonCardPreviews(): List<PokemonCardPreview> {
     return this?.map {
         PokemonCardPreview(
             id = it.id,
-            imageUrls = it.imageUrl,
+            images = it.imageUrl,
             name = it.name,
             types = it.types,
             hp = it.hp,

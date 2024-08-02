@@ -1,7 +1,6 @@
 package com.yogigupta1206.m2ppokemon.presentation.home.components
 
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -25,7 +24,6 @@ import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.yogigupta1206.m2ppokemon.R
-import com.yogigupta1206.m2ppokemon.domain.model.PokemonCardEntity
 import com.yogigupta1206.m2ppokemon.domain.model.PokemonCardPreview
 import kotlinx.coroutines.Dispatchers
 
@@ -46,7 +44,7 @@ fun PokemonListItem(pokemon: PokemonCardPreview, onClick: () -> Unit) {
         ) {
         AsyncImage(
             model = ImageRequest.Builder(LocalContext.current)
-                .data(pokemon.imageUrls.small)
+                .data(pokemon.images.small)
                 .crossfade(true)
                 .dispatcher(Dispatchers.IO)
                 .build(),
