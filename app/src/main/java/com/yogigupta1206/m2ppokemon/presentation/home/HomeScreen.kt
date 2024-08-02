@@ -1,10 +1,8 @@
 package com.yogigupta1206.m2ppokemon.presentation.home
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -13,13 +11,13 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -36,7 +34,6 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.yogigupta1206.m2ppokemon.domain.model.PokemonCardPreview
 import com.yogigupta1206.m2ppokemon.presentation.home.components.PokemonListItem
-import com.yogigupta1206.m2ppokemon.ui.components.Screens
 
 @Composable
 fun HomeScreen(
@@ -46,71 +43,77 @@ fun HomeScreen(
 
     val state by viewModel.pokemonList.collectAsState()
     val searchText by viewModel.searchText.collectAsState()
-    val sortOption by viewModel.sortOption.collectAsState()
 
     Scaffold(
         topBar = {
-            HomeTopAppBar(
-                searchText = searchText,
-                onValueChange = viewModel::onSearchTextChange,
-                sortOption = sortOption,
-                onSortOptionChange = viewModel::onSortOptionChange
-            )
+            HomeTopAppBar()
         },
         content = { padding ->
-            HomeScreenContent(padding, state, onNavigateToPokemonDetails)
+            Column(
+                modifier = Modifier.padding(padding)
+            ) {
+                SearchHeader(
+                    searchText = searchText,
+                    onValueChange = viewModel::onSearchTextChange,
+                    onSortOptionChange = viewModel::onSortOptionChange
+                )
+                HomeScreenContent(state, onNavigateToPokemonDetails)
+            }
+
         }
     )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HomeTopAppBar(
-    searchText: String,
-    onValueChange: (String) -> Unit,
-    sortOption: SortOption,
-    onSortOptionChange: (SortOption) -> Unit
-) {
+fun HomeTopAppBar() {
     Column {
         TopAppBar(title = { Text(text = "Pokémon Card Collection") },
             navigationIcon = { /* Drawer Menu Icon (Optional) */ })
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+    }
+}
 
-        ) {
-            SearchBar(
-                modifier = Modifier.weight(1f),
-                query = searchText,
-                onQueryChange = onValueChange,
-                onSearch = { /* Handle search action here */ }
-            )
+@Composable
+fun SearchHeader(
+    searchText: String,
+    onValueChange: (String) -> Unit,
+    onSortOptionChange: (SortOption) -> Unit
+){
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
 
-            Spacer(modifier = Modifier.width(8.dp)) // Add spacing between search bar and sorting
+    ) {
+        SearchBar(
+            modifier = Modifier.weight(1f),
+            query = searchText,
+            onQueryChange = onValueChange,
+            onSearch = { /* Handle search action here */ }
+        )
 
-            var expanded by remember { mutableStateOf(false) }
-            Box {
-                Text(
-                    text = "Sort: ${sortOption.name}",
-                    modifier = Modifier.clickable { expanded = true },
-                    style = MaterialTheme.typography.bodyMedium
-                )
-                DropdownMenu(
-                    expanded = expanded,
-                    onDismissRequest = { expanded = false }
-                ) {
-                    SortOption.entries.forEach { option ->
-                        DropdownMenuItem(
-                            text = { Text(option.name) },
-                            onClick = {
-                                onSortOptionChange(option)
-                                expanded = false
-                            }
-                        )
-                    }
+        Spacer(modifier = Modifier.width(16.dp)) // Add spacing between search bar and sorting
+
+        var expanded by remember { mutableStateOf(false) }
+        Box {
+            IconButton(onClick = { expanded = true }) {
+                Icon(imageVector = Icons.Filled.Menu,
+                    contentDescription = "Sort",)
+            }
+            DropdownMenu(
+                expanded = expanded,
+                onDismissRequest = { expanded = false }
+            ) {
+                SortOption.entries.forEach { option ->
+                    DropdownMenuItem(
+                        text = { Text(option.name) },
+                        onClick = {
+                            onSortOptionChange(option)
+                            expanded = false
+                        }
+                    )
                 }
             }
         }
@@ -136,17 +139,16 @@ fun SearchBar(
             }
         },
         singleLine = true,
-        shape = RoundedCornerShape(50) // Make ends rounded
+        shape = RoundedCornerShape(50)
     )
 }
 
 @Composable
 fun HomeScreenContent(
-    padding: PaddingValues,
     state: List<PokemonCardPreview>,
     onNavigateToPokemonDetails: (String) -> Unit
 ) {
-    LazyColumn(contentPadding = padding) {
+    LazyColumn {
         items(state.size) { index ->
             PokemonListItem(state[index], onClick = {
                 onNavigateToPokemonDetails(state[index].id)
